@@ -19,11 +19,6 @@ const char* station_name = "ESP Mosquito detector";
 // JWT
 char key[] = "tester";
 
-// History file
-const char *filename = "/test.jso";
-const int chipSelect = 4;
-
-
 unsigned long previousMillis = 0;
 const long interval = 1000;
 
@@ -33,94 +28,6 @@ long anopheles = 0;
 
 
 ESP8266WebServer server(80);
-
-
-void printFile() {
-    // Open file for reading
-    File file = SD.open(filename);
-    if (!file) {
-        Serial.println(F("Failed to read file"));
-        return;
-    }
- 
-    // Extract each characters by one by one
-    while (file.available()) {
-        Serial.print((char) file.read());
-    }
-    Serial.println();
- 
-    // Close the file
-    file.close();
-}
-
-// Create json history
-void createJsonHistory() {
-  DynamicJsonDocument doc(1024);
-
-  JsonObject obj;
-  // Open file
-  File file = SD.open(filename);
-  if (!file) {
-    Serial.println(F("Failed to create file, probably not exists"));
-    Serial.println(F("Create an empty one!"));
-    obj = doc.to<JsonObject>();
-  } else {
-
-    DeserializationError error = deserializeJson(doc, file);
-    if (error) {
-      // if the file didn't open, print an error:
-      Serial.println(F("Error parsing JSON "));
-      Serial.println(error.c_str());
-
-      // create an empty JSON object
-      obj = doc.to<JsonObject>();
-    } else {
-      // GET THE ROOT OBJECT TO MANIPULATE
-      obj = doc.as<JsonObject>();
-    }
-
-  }
-
-  // close the file already loaded:
-  file.close();
-
-  obj[F("millis")] = millis();
-
-  JsonArray data;
-  // Check if exist the array
-  if (!obj.containsKey(F("data"))) {
-    Serial.println(F("Not find data array! Crete one!"));
-    data = obj.createNestedArray(F("data"));
-  } else {
-    Serial.println(F("Find data array!"));
-    data = obj[F("data")];
-  }
-
-  // create an object to add to the array
-  JsonObject objArrayData = data.createNestedObject();
-
-  objArrayData["prevNumOfElem"] = data.size();
-  objArrayData["newNumOfElem"] = data.size() + 1;
-
-  SD.remove(filename);
-
-  // Open file for writing
-  file = SD.open(filename, FILE_WRITE);
-
-  // Serialize JSON to file
-  if (serializeJson(doc, file) == 0) {
-    Serial.println(F("Failed to write to file"));
-  }
-
-  // Close the file
-  file.close();
-
-  // Print test file
-  Serial.println(F("Print test file..."));
-  printFile();
-
-  delay(5000);
-}
 
 // Serving all detections
 void getDetections() {
@@ -229,17 +136,6 @@ void setup(void) {
   // Start server
   server.begin();
   Serial.println("HTTP server started");
-
-  // Initialize SD library
-  while (!SD.begin(chipSelect)) {
-    Serial.println(F("Failed to initialize SD library"));
-    delay(1000);
-  }
-
-  Serial.println(F("SD library initialized"));
-
-  Serial.println(F("Delete original file if exists!"));
-  SD.remove(filename);
 }
 
 void loop(void) {
@@ -254,8 +150,6 @@ void loop(void) {
     aedes += 1;
     culex += 1;
     anopheles += 1;
-
-    createJsonHistory();
   }
 
 }
